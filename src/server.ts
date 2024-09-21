@@ -1,6 +1,8 @@
 import express, { Express } from "express";
 import cors from "cors";
 import { env } from "./env";
+import { createTrip } from "./routes/create-trip";
+import { confirmTrip } from "./routes/confirm-trip";
 
 const app: Express = express();
 
@@ -21,6 +23,9 @@ app.use(
   })
 );
 app.use(express.json());
+
+app.post("/trips", createTrip);
+app.get("/trips/:tripId/confirm", confirmTrip);
 
 app.listen({ port: env.PORT }, () => {
   console.log(`🔥 Server running on port ${env.PORT}`);
