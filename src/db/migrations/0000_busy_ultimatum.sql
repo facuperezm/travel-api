@@ -17,11 +17,16 @@ CREATE TABLE IF NOT EXISTS "participants" (
 	"name" varchar(255) NOT NULL,
 	"email" varchar(255) NOT NULL,
 	"is_confirmed" boolean DEFAULT false,
-	"is_owner" boolean DEFAULT false,
-	"trip_id" uuid NOT NULL,
 	"access_token" text,
 	"refresh_token" text,
 	CONSTRAINT "participants_email_unique" UNIQUE("email")
+);
+--> statement-breakpoint
+CREATE TABLE IF NOT EXISTS "participants_trips" (
+	"participant_id" uuid,
+	"trip_id" uuid,
+	"is_owner" boolean DEFAULT false,
+	CONSTRAINT "participants_trips_participant_id_trip_id_pk" PRIMARY KEY("participant_id","trip_id")
 );
 --> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "trips" (
@@ -30,7 +35,8 @@ CREATE TABLE IF NOT EXISTS "trips" (
 	"starts_at" timestamp NOT NULL,
 	"ends_at" timestamp NOT NULL,
 	"created_at" timestamp DEFAULT now(),
-	"is_confirmed" boolean DEFAULT false
+	"is_confirmed" boolean DEFAULT false,
+	"owner_id" uuid
 );
 --> statement-breakpoint
 DO $$ BEGIN
@@ -46,7 +52,19 @@ EXCEPTION
 END $$;
 --> statement-breakpoint
 DO $$ BEGIN
- ALTER TABLE "participants" ADD CONSTRAINT "participants_trip_id_trips_id_fk" FOREIGN KEY ("trip_id") REFERENCES "public"."trips"("id") ON DELETE no action ON UPDATE no action;
+ ALTER TABLE "participants_trips" ADD CONSTRAINT "participants_trips_participant_id_participants_id_fk" FOREIGN KEY ("participant_id") REFERENCES "public"."participants"("id") ON DELETE no action ON UPDATE no action;
+EXCEPTION
+ WHEN duplicate_object THEN null;
+END $$;
+--> statement-breakpoint
+DO $$ BEGIN
+ ALTER TABLE "participants_trips" ADD CONSTRAINT "participants_trips_trip_id_trips_id_fk" FOREIGN KEY ("trip_id") REFERENCES "public"."trips"("id") ON DELETE no action ON UPDATE no action;
+EXCEPTION
+ WHEN duplicate_object THEN null;
+END $$;
+--> statement-breakpoint
+DO $$ BEGIN
+ ALTER TABLE "trips" ADD CONSTRAINT "trips_owner_id_participants_id_fk" FOREIGN KEY ("owner_id") REFERENCES "public"."participants"("id") ON DELETE no action ON UPDATE no action;
 EXCEPTION
  WHEN duplicate_object THEN null;
 END $$;

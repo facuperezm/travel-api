@@ -1,5 +1,5 @@
 {
-  "id": "98f0eb23-c2d5-4356-9870-65976d326cb8",
+  "id": "5bdf2f53-b755-4b35-86e6-1fa5a05f5dde",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -132,19 +132,6 @@
           "notNull": false,
           "default": false
         },
-        "is_owner": {
-          "name": "is_owner",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": false,
-          "default": false
-        },
-        "trip_id": {
-          "name": "trip_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
         "access_token": {
           "name": "access_token",
           "type": "text",
@@ -159,10 +146,60 @@
         }
       },
       "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "participants_email_unique": {
+          "name": "participants_email_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "email"
+          ]
+        }
+      }
+    },
+    "public.participants_trips": {
+      "name": "participants_trips",
+      "schema": "",
+      "columns": {
+        "participant_id": {
+          "name": "participant_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "trip_id": {
+          "name": "trip_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "is_owner": {
+          "name": "is_owner",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "default": false
+        }
+      },
+      "indexes": {},
       "foreignKeys": {
-        "participants_trip_id_trips_id_fk": {
-          "name": "participants_trip_id_trips_id_fk",
-          "tableFrom": "participants",
+        "participants_trips_participant_id_participants_id_fk": {
+          "name": "participants_trips_participant_id_participants_id_fk",
+          "tableFrom": "participants_trips",
+          "tableTo": "participants",
+          "columnsFrom": [
+            "participant_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "participants_trips_trip_id_trips_id_fk": {
+          "name": "participants_trips_trip_id_trips_id_fk",
+          "tableFrom": "participants_trips",
           "tableTo": "trips",
           "columnsFrom": [
             "trip_id"
@@ -174,16 +211,16 @@
           "onUpdate": "no action"
         }
       },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "participants_email_unique": {
-          "name": "participants_email_unique",
-          "nullsNotDistinct": false,
+      "compositePrimaryKeys": {
+        "participants_trips_participant_id_trip_id_pk": {
+          "name": "participants_trips_participant_id_trip_id_pk",
           "columns": [
-            "email"
+            "participant_id",
+            "trip_id"
           ]
         }
-      }
+      },
+      "uniqueConstraints": {}
     },
     "public.trips": {
       "name": "trips",
@@ -227,10 +264,30 @@
           "primaryKey": false,
           "notNull": false,
           "default": false
+        },
+        "owner_id": {
+          "name": "owner_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
         }
       },
       "indexes": {},
-      "foreignKeys": {},
+      "foreignKeys": {
+        "trips_owner_id_participants_id_fk": {
+          "name": "trips_owner_id_participants_id_fk",
+          "tableFrom": "trips",
+          "tableTo": "participants",
+          "columnsFrom": [
+            "owner_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {}
     }

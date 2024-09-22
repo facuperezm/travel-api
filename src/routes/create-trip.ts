@@ -6,7 +6,13 @@ import { env } from "../env";
 import { randomBytes } from "crypto";
 import { db } from "@/db";
 import nodemailer from "nodemailer";
-import { trips, participants } from "@/db/schema";
+import {
+  trips,
+  participants,
+  participantsTrips,
+  Participant,
+  Trip,
+} from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { scheduler } from "timers/promises";
 function generateAccessToken(): string {
@@ -45,110 +51,84 @@ export async function createTrip(req: Request, res: Response) {
         .json({ error: "End date cannot be before start date" });
     }
 
-    const formattedDate = dayjs(starts_at).format("LL");
-    const formattedEndDate = dayjs(ends_at).format("LL");
-
     const trip = await db.transaction(async (tx) => {
       // Check if the trip creator already exists
-      const tripCreator = await tx.query.participants.findFirst({
+      let owner = await tx.query.participants.findFirst({
         where: eq(participants.email, owner_email),
       });
 
-      if (!tripCreator) {
-        // Insert the trip
-        const insertedTrips = await tx
-          .insert(trips)
-          .values({
-            destination,
-            starts_at,
-            ends_at,
-          })
-          .returning({
-            id: trips.id,
-          })
-          .execute();
-        const tripId = insertedTrips[0].id;
-
-        await tx
+      // If the creator doesnt exist, create a new participant
+      if (!owner) {
+        const [newOwner] = await tx
           .insert(participants)
-          .values([
-            {
-              trip_id: tripId,
-              name: owner_name,
-              email: owner_email,
-              is_owner: true,
-              is_confirmed: true,
-              access_token: generateAccessToken(),
-            },
-            ...emails_to_invite.map((email) => ({
-              trip_id: tripId,
-              name: "", // TODO: Add name to the participant
-              email,
-              is_owner: false,
-              is_confirmed: false,
-              access_token: generateAccessToken(),
-            })),
-          ])
-          .execute();
-
-        // Fetch and return the trip with participants
-        const tripWithParticipants = await tx.query.trips.findFirst({
-          where: eq(trips.id, tripId),
-          with: {
-            participants: true,
-          },
-        });
-
-        return tripWithParticipants;
-      } else {
-        const insertedTrips = await tx
-          .insert(trips)
           .values({
-            destination,
-            starts_at,
-            ends_at,
-          })
-          .returning({
-            id: trips.id,
-          })
-          .execute();
-        const tripId = insertedTrips[0].id;
+            name: owner_name,
+            email: owner_email,
+            is_confirmed: true,
+            access_token: generateAccessToken(),
+          } as Participant)
+          .returning();
 
-        await tx
-          .insert(participants)
-          .values([
-            {
-              trip_id: tripId,
-              name: owner_name,
-              email: owner_email,
-              is_owner: true,
-              is_confirmed: true,
-              access_token: generateAccessToken(),
-            },
-            ...emails_to_invite.map((email) => ({
-              trip_id: tripId,
-              name: "", // TODO: Add name to the participant
-              email,
-              is_owner: false,
-              is_confirmed: false,
-              access_token: generateAccessToken(),
-            })),
-          ])
-          .execute();
-
-        // Fetch and return the trip with participants
-        const tripWithParticipants = await tx.query.trips.findFirst({
-          where: eq(trips.id, tripId),
-          with: {
-            participants: true,
-          },
-        });
-
-        return tripWithParticipants;
+        owner = newOwner;
       }
+
+      // Insert the trip
+      const [newTrip] = await tx
+        .insert(trips)
+        .values({
+          destination,
+          starts_at,
+          ends_at,
+          owner_id: owner.id,
+        } as Trip)
+        .returning({
+          id: trips.id,
+        });
+
+      // Add the owner to the trip
+      await tx.insert(participantsTrips).values({
+        participant_id: owner.id,
+        trip_id: newTrip.id,
+        is_owner: true,
+      });
+
+      for (const email of emails_to_invite) {
+        let participant = await tx.query.participants.findFirst({
+          where: eq(participants.email, email),
+        });
+
+        if (!participant) {
+          const [newParticipant] = await tx
+            .insert(participants)
+            .values({
+              name: "", // TODO: Add name to the participant
+              email,
+            })
+            .returning();
+          participant = newParticipant;
+        }
+
+        await tx.insert(participantsTrips).values({
+          participant_id: participant.id,
+          trip_id: newTrip.id,
+          is_owner: false,
+        });
+      }
+
+      // Fetch and return the trip with participants
+      const tripWithParticipants = await tx.query.trips.findFirst({
+        where: eq(trips.id, newTrip.id),
+        with: {
+          participants: true,
+        },
+      });
+
+      return tripWithParticipants;
     });
 
     const confirmationLink = `${env.BACKEND_URL}/trips/${trip.id}/confirm`;
+    const formattedDate = dayjs(starts_at).format("LL");
+    const formattedEndDate = dayjs(ends_at).format("LL");
 
     const mail = await getMailClient();
 
