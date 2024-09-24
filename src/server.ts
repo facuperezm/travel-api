@@ -3,6 +3,8 @@ import cors from "cors";
 import { env } from "./env";
 import { createTrip } from "./routes/create-trip";
 import { confirmTrip } from "./routes/confirm-trip";
+import { updateTrip } from "./routes/update-trip";
+import { getTripDetails } from "./routes/get-trip-details";
 
 const app: Express = express();
 
@@ -26,6 +28,8 @@ app.use(express.json());
 
 app.post("/trips", createTrip);
 app.get("/trips/:tripId/confirm", confirmTrip);
+app.put("/trips/:tripId", updateTrip);
+app.get("/trips/:tripId", getTripDetails);
 
 app.listen({ port: env.PORT }, () => {
   console.log(`🔥 Server running on port ${env.PORT}`);
