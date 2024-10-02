@@ -5,6 +5,7 @@ import { createTrip } from "./routes/create-trip";
 import { confirmTrip } from "./routes/confirm-trip";
 import { updateTrip } from "./routes/update-trip";
 import { getTripDetails } from "./routes/get-trip-details";
+import { createActivity } from "./routes/create-activity";
 
 const app: Express = express();
 
@@ -30,6 +31,7 @@ app.post("/trips", createTrip);
 app.get("/trips/:tripId/confirm", confirmTrip);
 app.put("/trips/:tripId", updateTrip);
 app.get("/trips/:tripId", getTripDetails);
+app.post("/trips/:tripId/activities", createActivity);
 
 app.listen({ port: env.PORT }, () => {
   console.log(`🔥 Server running on port ${env.PORT}`);
