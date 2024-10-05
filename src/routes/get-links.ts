@@ -5,23 +5,28 @@ import { z } from "zod";
 import { Response, Request } from "express";
 
 export async function getLinks(req: Request, res: Response) {
-  const paramsSchema = z.object({
-    tripId: z.string().uuid(),
-  });
+  try {
+    const paramsSchema = z.object({
+      tripId: z.string().uuid(),
+    });
 
-  const { tripId } = paramsSchema.parse(req.params);
+    const { tripId } = paramsSchema.parse(req.params);
 
-  const trip = await db.query.trips.findFirst({
-    where: eq(trips.id, tripId),
-  });
+    const trip = await db.query.trips.findFirst({
+      where: eq(trips.id, tripId),
+    });
 
-  if (!trip) {
-    return res.status(404).json({ error: "Trip not found" });
+    if (!trip) {
+      return res.status(404).json({ error: "Trip not found" });
+    }
+
+    const linksUrls = await db.query.links.findMany({
+      where: eq(links.trip_id, tripId),
+    });
+
+    return res.json(linksUrls);
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: "Internal server error" });
   }
-
-  const linksUrls = await db.query.links.findMany({
-    where: eq(links.trip_id, tripId),
-  });
-
-  return res.json(linksUrls);
 }
