@@ -11,7 +11,7 @@ export async function confirmParticipant(req: Request, res: Response) {
     participantId: z.string().uuid(),
   });
 
-  const { participantId } = schema.parse(req.url);
+  const { participantId } = schema.parse(req.params);
 
   const participant = await db.query.participants.findFirst({
     where: eq(participants.id, participantId),
@@ -21,14 +21,19 @@ export async function confirmParticipant(req: Request, res: Response) {
     return res.status(404).json({ message: "Participant not found" });
   }
 
-  const participantTrip = await db.query.participantsTrips.findMany({
+  const participantTrip = await db.query.participantsTrips.findFirst({
     where: eq(participantsTrips.participant_id, participantId),
+    with: {
+      trip: true,
+    },
   });
+
+  console.log(participantTrip);
 
   if (participant.is_confirmed) {
     return res.redirect(
       302,
-      `${env.FRONTEND_URL}/trips/${participantTrip[0].trip_id}`
+      `${env.FRONTEND_URL}/trips/${participantTrip.trip_id}`
     );
   }
 
@@ -39,6 +44,6 @@ export async function confirmParticipant(req: Request, res: Response) {
 
   return res.redirect(
     302,
-    `${env.FRONTEND_URL}/trips/${participantTrip[0].trip_id}`
+    `${env.FRONTEND_URL}/trips/${participantTrip.trip_id}`
   );
 }

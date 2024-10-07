@@ -39,7 +39,7 @@ app.post("/trips/:tripId/activities", createActivity);
 app.post("/trips/:tripId/links", createLink);
 
 // GET
-app.get("/trips/:tripId/confirm", confirmTrip);
+app.get("/participants/:participantId/confirm", confirmParticipant);
 app.get("/trips/:tripId", getTripDetails);
 app.get("/trips/:tripId/participants", getTripsParticipants);
 app.get("/trips/:tripId/activities", getActivities);
