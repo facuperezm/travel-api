@@ -1,16 +1,29 @@
-import { db } from "@/db";
-import { trips } from "@/db/schema";
-import { eq } from "drizzle-orm";
+// src/routes/get-trip-details.ts
+import { AuthenticatedRequest } from "@/middleware/auth";
 import { Request, Response } from "express";
+import { db } from "@/db";
+import { trips, participantsTrips } from "@/db/schema";
+import { eq } from "drizzle-orm";
 import { z } from "zod";
 
-export async function getTripDetails(req: Request, res: Response) {
+export async function getTripDetails(req: AuthenticatedRequest, res: Response) {
   try {
     const schema = z.object({
       tripId: z.string(),
     });
 
     const { tripId } = schema.parse(req.params);
+    const participantId = req.participantId;
+
+    // Check if participant is part of the trip
+    const participation = await db.query.participantsTrips.findFirst({
+      where: eq(participantsTrips.trip_id, tripId),
+      and: eq(participantsTrips.participant_id, participantId),
+    });
+
+    if (!participation) {
+      return res.status(403).json({ error: "Access denied" });
+    }
 
     const trip = await db.query.trips.findFirst({
       where: eq(trips.id, tripId),

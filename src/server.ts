@@ -1,3 +1,4 @@
+// src/server.ts
 import express, { Express } from "express";
 import cors from "cors";
 import { env } from "./env";
@@ -12,6 +13,8 @@ import { getLinks } from "./routes/get-links";
 import { getParticipant } from "./routes/get-participant";
 import { confirmParticipant } from "./routes/confirm-participant";
 import { getTripsParticipants } from "./routes/get-trip-participants";
+import { login } from "./routes/login";
+import { authenticate } from "./middleware/auth";
 
 const app: Express = express();
 
@@ -21,34 +24,37 @@ app.use(
     allowedHeaders: ["Content-Type", "Authorization"],
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "PATCH"],
     origin: (origin, cb) => {
-      const allowedOrigins = [env.FRONTEND_URL, "http://localhost:3000"]; // Añade los orígenes permitidos
+      const allowedOrigins = [env.FRONTEND_URL, "http://localhost:3000"];
       if (!origin || allowedOrigins.includes(origin)) {
         cb(null, true);
       } else {
         cb(new Error("Not allowed by CORS"), false);
       }
     },
-    maxAge: 86400, // 1 day
+    maxAge: 86400,
   })
 );
 app.use(express.json());
 
-// POST
-app.post("/trips", createTrip);
-app.post("/trips/:tripId/activities", createActivity);
-app.post("/trips/:tripId/links", createLink);
+// Public Routes
+app.post("/login", login);
 
-// GET
-app.get("/participants/:participantId/confirm", confirmParticipant);
-app.get("/trips/:tripId", getTripDetails);
-app.get("/trips/:tripId/participants", getTripsParticipants);
-app.get("/trips/:tripId/activities", getActivities);
-app.get("/trips/:tripId/links", getLinks);
+// Protected Routes
+app.post("/trips", authenticate, createTrip);
+app.post("/trips/:tripId/activities", authenticate, createActivity);
+app.post("/trips/:tripId/links", authenticate, createLink);
+
+// GET Routes
+app.get("/trips/:tripId/confirm", confirmTrip);
+app.get("/trips/:tripId", authenticate, getTripDetails);
+app.get("/trips/:tripId/participants", authenticate, getTripsParticipants);
+app.get("/trips/:tripId/activities", authenticate, getActivities);
+app.get("/trips/:tripId/links", authenticate, getLinks);
 app.get("/participants/:participantId/confirm", confirmParticipant);
 app.get("/participants/:participantId", getParticipant);
 
-// PUT
-app.put("/trips/:tripId", updateTrip);
+// PUT Routes
+app.put("/trips/:tripId", authenticate, updateTrip);
 
 app.listen({ port: env.PORT }, () => {
   console.log(`🔥 Server running on port ${env.PORT}`);

@@ -28,28 +28,28 @@ export async function createInvites(req: Request, res: Response) {
     return res.status(404).json({ message: "Trip not found" });
   }
 
-  //create participant
-  const participant = (await db
+  const participant = await db
     .insert(participants)
     .values({
-      email,
       name,
+      email,
+      access_token: crypto.randomUUID().toString(),
     })
-    .returning()) as unknown as Participant;
+    .returning();
 
   const formattedStartDate = dayjs(trip.starts_at).format("LL");
   const formattedEndDate = dayjs(trip.ends_at).format("LL");
 
   const mail = await getMailClient();
 
-  const confirmationLink = `${env.BACKEND_URL}/participants/${participant.id}/confirm`;
+  const confirmationLink = `${env.BACKEND_URL}/participants/${participant[0].id}/confirm`;
 
   const message = await mail.sendMail({
     from: {
       name: "Marc from Travel",
       address: "hi@travel.com",
     },
-    to: participant.email,
+    to: participant[0].email,
     subject: `Confirm your presence on ${trip.destination} on ${formattedStartDate}`,
     html: `
         <div style="font-family: sans-serif; font-size: 16px; line-height: 1.6;">
@@ -68,5 +68,5 @@ export async function createInvites(req: Request, res: Response) {
 
   console.log(nodemailer.getTestMessageUrl(message));
 
-  return { participantId: participant.id };
+  return { participantId: participant[0].id };
 }
