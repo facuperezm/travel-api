@@ -15,6 +15,7 @@ import { confirmParticipant } from "./routes/confirm-participant";
 import { getTripsParticipants } from "./routes/get-trip-participants";
 import { login } from "./routes/login";
 import { authenticate } from "./middleware/auth";
+import { refreshToken } from "./routes/refresh-token";
 
 const app: Express = express();
 
@@ -38,6 +39,7 @@ app.use(express.json());
 
 // Public Routes
 app.post("/login", login);
+app.post("/refresh-token", refreshToken);
 
 // Protected Routes
 app.post("/trips", authenticate, createTrip);

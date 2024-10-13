@@ -14,6 +14,7 @@ const envSchema = z.object({
   FRONTEND_URL: z.string(),
   BACKEND_URL: z.string(),
   JWT_SECRET: z.string(),
+  JWT_REFRESH_SECRET: z.string(),
   DB_MIGRATE: stringBoolean,
   DB_SEED: stringBoolean,
 });

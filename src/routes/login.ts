@@ -1,10 +1,9 @@
-// src/routes/login.ts
 import { Request, Response } from "express";
 import { z } from "zod";
 import { db } from "@/db";
 import { participants } from "@/db/schema";
 import { eq } from "drizzle-orm";
-import { generateJWT } from "@/lib/auth";
+import { generateAccessToken, generateRefreshToken } from "@/lib/auth";
 
 export async function login(req: Request, res: Response) {
   const schema = z.object({
@@ -23,9 +22,16 @@ export async function login(req: Request, res: Response) {
       return res.status(401).json({ error: "Invalid email or access token" });
     }
 
-    const token = generateJWT(participant.id);
+    const accessToken = generateAccessToken(participant.id);
+    const refreshToken = generateRefreshToken(participant.id);
 
-    res.json({ token });
+    // Optionally, store the refresh token in the database
+    await db
+      .update(participants)
+      .set({ refresh_token: refreshToken })
+      .where(eq(participants.id, participant.id));
+
+    res.json({ accessToken, refreshToken });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return res.status(400).json({ error: error.errors });

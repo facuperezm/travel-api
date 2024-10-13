@@ -5,22 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1726964252258,
-      "tag": "0000_busy_ultimatum",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1728691186358,
-      "tag": "0001_cool_joseph",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1728691475424,
-      "tag": "0002_fantastic_power_man",
+      "when": 1728702770543,
+      "tag": "0000_bent_rage",
       "breakpoints": true
     }
   ]

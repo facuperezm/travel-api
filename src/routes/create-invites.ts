@@ -2,7 +2,12 @@ import { z } from "zod";
 import { Request, Response } from "express";
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
-import { Participant, participants, trips } from "@/db/schema";
+import {
+  Participant,
+  ParticipantInsert,
+  participants,
+  trips,
+} from "@/db/schema";
 import nodemailer from "nodemailer";
 
 import { getMailClient } from "@/lib/mail";
@@ -28,14 +33,14 @@ export async function createInvites(req: Request, res: Response) {
     return res.status(404).json({ message: "Trip not found" });
   }
 
-  const participant = await db
+  const participant = (await db
     .insert(participants)
     .values({
       name,
       email,
       access_token: crypto.randomUUID().toString(),
     })
-    .returning();
+    .returning()) as ParticipantInsert[];
 
   const formattedStartDate = dayjs(trip.starts_at).format("LL");
   const formattedEndDate = dayjs(trip.ends_at).format("LL");

@@ -103,3 +103,5 @@ export const linksRelations = relations(links, ({ one }) => ({
 
 export type Trip = typeof trips.$inferSelect;
 export type Participant = typeof participants.$inferSelect;
+export type ParticipantSelect = typeof participants.$inferSelect;
+export type ParticipantInsert = typeof participants.$inferInsert;
