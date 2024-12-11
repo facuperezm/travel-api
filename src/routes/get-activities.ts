@@ -4,6 +4,7 @@ import { z } from "zod";
 import { Response, Request } from "express";
 import { activities, trips } from "@/db/schema";
 import dayjs from "dayjs";
+
 export async function getActivities(req: Request, res: Response) {
   const paramsSchema = z.object({
     tripId: z.string().uuid(),
@@ -18,6 +19,10 @@ export async function getActivities(req: Request, res: Response) {
   const trip = await db.query.trips.findFirst({
     where: eq(trips.id, tripId),
   });
+
+  if (!trip) {
+    return res.status(404).json({ error: "Trip not found" });
+  }
 
   const differenceInDaysBetweenTripStartAndEnd = dayjs(trip.ends_at).diff(
     trip.starts_at,

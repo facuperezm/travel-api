@@ -1,6 +1,4 @@
-# Travel Manager API - Fullstack Application
-
-Live Demo: [Travel Manager API](https://travel-manager-api.vercel.app/)
+# Travel Manager API - Backend
 
 The Travel Manager API is a fullstack application designed to manage travel itineraries, and provide robust search functionality. This project demonstrates the use of a monorepo setup to manage both frontend and backend codebases.
 

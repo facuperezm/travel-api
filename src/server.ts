@@ -22,14 +22,20 @@ const app: Express = express();
 app.use(
   cors({
     credentials: true,
-    allowedHeaders: ["Content-Type", "Authorization"],
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+      "Origin",
+      "Accept",
+      "X-Requested-With",
+    ],
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "PATCH"],
     origin: (origin, cb) => {
-      const allowedOrigins = [env.FRONTEND_URL, "http://localhost:3000"];
+      const allowedOrigins = env.FRONTEND_URL || "http://localhost:3000";
       if (!origin || allowedOrigins.includes(origin)) {
         cb(null, true);
       } else {
-        cb(new Error("Not allowed by CORS"), false);
+        cb(new Error(`Origin ${origin} not allowed by CORS policy`), false);
       }
     },
     maxAge: 86400,
@@ -42,21 +48,21 @@ app.post("/login", login);
 app.post("/refresh-token", refreshToken);
 
 // Protected Routes
-app.post("/trips", authenticate, createTrip);
-app.post("/trips/:tripId/activities", authenticate, createActivity);
-app.post("/trips/:tripId/links", authenticate, createLink);
+app.post("/trips", createTrip);
+app.post("/trips/:tripId/activities", createActivity);
+app.post("/trips/:tripId/links", createLink);
 
 // GET Routes
 app.get("/trips/:tripId/confirm", confirmTrip);
-app.get("/trips/:tripId", authenticate, getTripDetails);
-app.get("/trips/:tripId/participants", authenticate, getTripsParticipants);
-app.get("/trips/:tripId/activities", authenticate, getActivities);
-app.get("/trips/:tripId/links", authenticate, getLinks);
+app.get("/trips/:tripId", getTripDetails);
+app.get("/trips/:tripId/participants", getTripsParticipants);
+app.get("/trips/:tripId/activities", getActivities);
+app.get("/trips/:tripId/links", getLinks);
 app.get("/participants/:participantId/confirm", confirmParticipant);
 app.get("/participants/:participantId", getParticipant);
 
 // PUT Routes
-app.put("/trips/:tripId", authenticate, updateTrip);
+app.put("/trips/:tripId", updateTrip);
 
 app.listen({ port: env.PORT }, () => {
   console.log(`🔥 Server running on port ${env.PORT}`);
