@@ -22,7 +22,7 @@ function generateAccessToken(): string {
 export async function createTrip(req: Request, res: Response) {
   try {
     const schema = z.object({
-      destination: z.string().min(4),
+      destination: z.string(),
       starts_at: z.coerce.date(),
       ends_at: z.coerce.date(),
       owner_name: z.string(),
@@ -42,13 +42,13 @@ export async function createTrip(req: Request, res: Response) {
     if (dayjs(starts_at).isBefore(new Date())) {
       return res
         .status(400)
-        .json({ error: "Start date cannot be in the past" });
+        .json({ error: "Start date can't be today or in the past" });
     }
 
     if (dayjs(ends_at).isBefore(starts_at)) {
       return res
         .status(400)
-        .json({ error: "End date cannot be before start date" });
+        .json({ error: "End date can't be before start date" });
     }
 
     const trip = await db.transaction(async (tx) => {

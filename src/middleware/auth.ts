@@ -1,6 +1,6 @@
 // src/middleware/auth.ts
 import { Request, Response, NextFunction } from "express";
-import { verifyJWT } from "@/lib/auth";
+import { verifyAccessToken } from "@/lib/auth";
 import { db } from "@/db";
 import { participants } from "@/db/schema";
 import { eq } from "drizzle-orm";
@@ -20,9 +20,9 @@ export async function authenticate(
     return res.status(401).json({ error: "Authorization header missing" });
   }
 
-  const token = authHeader.split(" ")[1]; // Expecting 'Bearer <token>'
+  const token = authHeader.split(" ")[1];
 
-  const payload = verifyJWT(token);
+  const payload = verifyAccessToken(token);
 
   if (!payload) {
     return res.status(401).json({ error: "Invalid token" });
