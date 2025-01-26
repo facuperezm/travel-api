@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { z } from "zod";
 import { db } from "@/db";
-import { participants } from "@/db/schema";
+import { participants, type ParticipantModel } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { generateAccessToken, generateRefreshToken } from "@/lib/auth";
 
@@ -18,20 +18,33 @@ export async function login(req: Request, res: Response) {
       where: eq(participants.email, email),
     });
 
-    if (!participant || participant.access_token !== access_token) {
+    if (!participant || participant.accessToken !== access_token) {
       return res.status(401).json({ error: "Invalid email or access token" });
     }
 
     const accessToken = generateAccessToken(participant.id);
     const refreshToken = generateRefreshToken(participant.id);
 
-    // Optionally, store the refresh token in the database
+    // Store refresh token in database
+    const updateData: Partial<ParticipantModel> = {
+      refreshToken,
+    };
+
     await db
       .update(participants)
-      .set({ refresh_token: refreshToken })
+      .set(updateData)
       .where(eq(participants.id, participant.id));
 
-    res.json({ accessToken, refreshToken });
+    // Set refresh token as HTTP-only cookie
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      path: "/api/refresh-token", // Only sent to refresh token endpoint
+    });
+
+    res.json({ accessToken });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return res.status(400).json({ error: error.errors });

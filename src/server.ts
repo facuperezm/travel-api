@@ -1,6 +1,7 @@
 // src/server.ts
 import express, { Express } from "express";
 import cors from "cors";
+import cookieParser from "cookie-parser";
 import { env } from "./env";
 import { createTrip } from "./routes/create-trip";
 import { confirmTrip } from "./routes/confirm-trip";
@@ -16,6 +17,11 @@ import { getTripsParticipants } from "./routes/get-trip-participants";
 import { login } from "./routes/login";
 import { authenticate } from "./middleware/auth";
 import { refreshToken } from "./routes/refresh-token";
+import {
+  authLimiter,
+  generalLimiter,
+  refreshTokenLimiter,
+} from "./middleware/rate-limit";
 
 const app: Express = express();
 
@@ -41,13 +47,18 @@ app.use(
     maxAge: 86400,
   })
 );
+
 app.use(express.json());
+app.use(cookieParser());
+app.use(generalLimiter); // Apply rate limiting to all routes
 
-// Public Routes
-app.post("/login", login);
-app.post("/refresh-token", refreshToken);
+// Public Routes with auth rate limiting
+app.post("/login", authLimiter, login);
+app.post("/refresh-token", refreshTokenLimiter, refreshToken);
 
-// Protected Routes
+// Protected Routes - all require authentication
+app.use(authenticate); // Apply authentication middleware to all routes below
+
 app.post("/trips", createTrip);
 app.post("/trips/:tripId/activities", createActivity);
 app.post("/trips/:tripId/links", createLink);
@@ -63,6 +74,10 @@ app.get("/participants/:participantId", getParticipant);
 
 // PUT Routes
 app.put("/trips/:tripId", updateTrip);
+
+// Periodic cleanup of blacklisted tokens (every hour)
+import { cleanupBlacklistedTokens } from "./lib/auth";
+setInterval(cleanupBlacklistedTokens, 60 * 60 * 1000);
 
 app.listen({ port: env.PORT }, () => {
   console.log(`🔥 Server running on port ${env.PORT}`);

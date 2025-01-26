@@ -8,6 +8,20 @@
       "when": 1728702770543,
       "tag": "0000_bent_rage",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1737929075537,
+      "tag": "0001_rare_gamma_corps",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1737929255286,
+      "tag": "0002_gorgeous_colossus",
+      "breakpoints": true
     }
   ]
 }

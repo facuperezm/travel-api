@@ -5,47 +5,50 @@ import {
   timestamp,
   boolean,
   varchar,
-  PrimaryKey,
+  primaryKey,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
-import { primaryKey } from "drizzle-orm/pg-core";
-
-export const trips = pgTable("trips", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  destination: text("destination").notNull(),
-  starts_at: timestamp("starts_at").notNull(),
-  ends_at: timestamp("ends_at").notNull(),
-  created_at: timestamp("created_at").defaultNow(),
-  is_confirmed: boolean("is_confirmed").default(false),
-  owner_id: uuid("owner_id").references(() => participants.id),
-});
 
 export const participants = pgTable("participants", {
   id: uuid("id").primaryKey().defaultRandom(),
   name: varchar("name", { length: 255 }).notNull(),
   email: varchar("email", { length: 255 }).notNull().unique(),
-  is_confirmed: boolean("is_confirmed").default(false),
-  access_token: text("access_token"),
-  refresh_token: text("refresh_token"),
+  isConfirmed: boolean("is_confirmed").default(false),
+  accessToken: text("access_token"),
+  refreshToken: text("refresh_token"),
+});
+
+export const trips = pgTable("trips", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  destination: text("destination").notNull(),
+  startsAt: timestamp("starts_at").notNull(),
+  endsAt: timestamp("ends_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  isConfirmed: boolean("is_confirmed").default(false),
+  ownerId: uuid("owner_id").references(() => participants.id),
 });
 
 export const participantsTrips = pgTable(
   "participants_trips",
   {
-    participant_id: uuid("participant_id").references(() => participants.id),
-    trip_id: uuid("trip_id").references(() => trips.id),
-    is_owner: boolean("is_owner").default(false),
+    participantId: uuid("participant_id")
+      .notNull()
+      .references(() => participants.id),
+    tripId: uuid("trip_id")
+      .notNull()
+      .references(() => trips.id),
+    isOwner: boolean("is_owner").default(false),
   },
   (table) => ({
-    pk: primaryKey({ columns: [table.participant_id, table.trip_id] }),
+    pk: primaryKey({ columns: [table.participantId, table.tripId] }),
   })
 );
 
 export const activities = pgTable("activities", {
   id: uuid("id").primaryKey().defaultRandom(),
   title: text("title").notNull(),
-  occurs_at: timestamp("occurs_at").notNull(),
-  trip_id: uuid("trip_id")
+  occursAt: timestamp("occurs_at").notNull(),
+  tripId: uuid("trip_id")
     .notNull()
     .references(() => trips.id),
 });
@@ -54,17 +57,28 @@ export const links = pgTable("links", {
   id: uuid("id").primaryKey().defaultRandom(),
   title: text("title").notNull(),
   url: text("url").notNull(),
-  trip_id: uuid("trip_id")
+  tripId: uuid("trip_id")
     .notNull()
     .references(() => trips.id),
 });
 
+export const blacklistedTokens = pgTable("blacklisted_tokens", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  token: text("token").notNull().unique(),
+  participantId: uuid("participant_id")
+    .notNull()
+    .references(() => participants.id),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Relations
 export const tripsRelations = relations(trips, ({ many, one }) => ({
   participants: many(participantsTrips),
   activities: many(activities),
   links: many(links),
   owner: one(participants, {
-    fields: [trips.owner_id],
+    fields: [trips.ownerId],
     references: [participants.id],
   }),
 }));
@@ -77,11 +91,11 @@ export const participantsTripsRelations = relations(
   participantsTrips,
   ({ one }) => ({
     participant: one(participants, {
-      fields: [participantsTrips.participant_id],
+      fields: [participantsTrips.participantId],
       references: [participants.id],
     }),
     trip: one(trips, {
-      fields: [participantsTrips.trip_id],
+      fields: [participantsTrips.tripId],
       references: [trips.id],
     }),
   })
@@ -89,19 +103,54 @@ export const participantsTripsRelations = relations(
 
 export const activitiesRelations = relations(activities, ({ one }) => ({
   trip: one(trips, {
-    fields: [activities.trip_id],
+    fields: [activities.tripId],
     references: [trips.id],
   }),
 }));
 
 export const linksRelations = relations(links, ({ one }) => ({
   trip: one(trips, {
-    fields: [links.trip_id],
+    fields: [links.tripId],
     references: [trips.id],
   }),
 }));
 
+export const blacklistedTokensRelations = relations(
+  blacklistedTokens,
+  ({ one }) => ({
+    participant: one(participants, {
+      fields: [blacklistedTokens.participantId],
+      references: [participants.id],
+    }),
+  })
+);
+
+// Type definitions
+export interface ParticipantModel {
+  id: string;
+  name: string;
+  email: string;
+  isConfirmed: boolean;
+  accessToken: string | null;
+  refreshToken: string | null;
+}
+
+export type ParticipantSelect = ParticipantModel;
+export type ParticipantInsert = Omit<ParticipantModel, "id">;
+
+export interface BlacklistedTokenModel {
+  id: string;
+  token: string;
+  participantId: string;
+  expiresAt: Date;
+  createdAt: Date;
+}
+
+export type BlacklistedTokenSelect = BlacklistedTokenModel;
+export type BlacklistedTokenInsert = Omit<
+  BlacklistedTokenModel,
+  "id" | "createdAt"
+>;
+
 export type Trip = typeof trips.$inferSelect;
-export type Participant = typeof participants.$inferSelect;
-export type ParticipantSelect = typeof participants.$inferSelect;
-export type ParticipantInsert = typeof participants.$inferInsert;
+export type TripInsert = typeof trips.$inferInsert;
